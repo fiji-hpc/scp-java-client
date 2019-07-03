@@ -32,6 +32,8 @@ public class AbstractBaseSshClient implements Closeable {
 
 	private int port = 22;
 
+	private String password = null;
+
 	public AbstractBaseSshClient(String hostName, String username,
 		byte[] privateKeyFile) throws JSchException
 	{
@@ -59,6 +61,12 @@ public class AbstractBaseSshClient implements Closeable {
 		init(hostName, userName, id);
 	}
 
+	public AbstractBaseSshClient(String hostName, String userName, String password) {
+		this.hostName = hostName;
+		this.username = userName;
+		this.password = password;
+	}
+
 	public void setPort(int port) {
 		this.port = port;
 	}
@@ -79,7 +87,14 @@ public class AbstractBaseSshClient implements Closeable {
 	protected Session getConnectedSession() throws JSchException {
 		if (session == null) {
 			session = jsch.getSession(username, hostName, port);
-
+			
+			if(this.password != null) {
+				java.util.Properties config = new java.util.Properties();
+				config.put("StrictHostKeyChecking", "no");
+				session.setPassword(password);
+				session.setConfig(config);
+			}
+			
 			UserInfo ui = new P_UserInfo();
 
 			session.setUserInfo(ui);
