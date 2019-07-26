@@ -45,10 +45,16 @@ public class SshCommandClient extends AbstractBaseSshClient {
 	}
 
 	public SshExecutionSession openSshExecutionSession(String command) {
+		return openSshExecutionSession(command, false);
+	}
+
+	public SshExecutionSession openSshExecutionSession(String command,
+		boolean pty)
+	{
 		try {
 			ChannelExec channelExec = (ChannelExec) getConnectedSession().openChannel(
 				"exec");
-
+			channelExec.setPty(pty);
 			channelExec.setCommand(command);
 			channelExec.connect();
 			return new P_SshExecutionSession(channelExec);
