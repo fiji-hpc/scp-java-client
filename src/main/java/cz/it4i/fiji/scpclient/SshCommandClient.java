@@ -60,7 +60,6 @@ public class SshCommandClient extends AbstractBaseSshClient {
 			return new P_SshExecutionSession(channelExec);
 		}
 		catch (Exception e) {
-			log.error("Error: ", e);
 			throw new RuntimeException(e);
 		}
 	}
@@ -97,7 +96,6 @@ public class SshCommandClient extends AbstractBaseSshClient {
 			}
 		}
 		catch (Exception e) {
-			log.error("Error: ", e);
 			throw new RuntimeException(e);
 		}
 		return result;
