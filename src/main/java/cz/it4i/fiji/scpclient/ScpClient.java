@@ -66,6 +66,10 @@ public class ScpClient extends AbstractBaseSshClient {
 		super(hostName, userName, keyFile, pass);
 	}
 
+	public ScpClient(String hostName, String userName, String password) {
+		super(hostName, userName, password);
+	}
+
 	public void download(String lfile, Path rFile) throws JSchException,
 		IOException
 	{
