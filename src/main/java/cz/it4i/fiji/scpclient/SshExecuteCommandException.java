@@ -7,6 +7,8 @@ import java.util.List;
 
 public class SshExecuteCommandException extends JSchException {
 
+	private static final long serialVersionUID = 8491385678306282231L;
+
 	private int exitStatus;
 	private List<String> stdout;
 	private List<String> stderr;
