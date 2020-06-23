@@ -10,6 +10,7 @@ import com.jcraft.jsch.UserInfo;
 import java.io.Closeable;
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Field;
+import java.util.Properties;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -61,7 +62,9 @@ public class AbstractBaseSshClient implements Closeable {
 		init(hostName, userName, id);
 	}
 
-	public AbstractBaseSshClient(String hostName, String userName, String password) {
+	public AbstractBaseSshClient(String hostName, String userName,
+		String password)
+	{
 		this.hostName = hostName;
 		this.username = userName;
 		this.password = password;
@@ -87,14 +90,14 @@ public class AbstractBaseSshClient implements Closeable {
 	protected Session getConnectedSession() throws JSchException {
 		if (session == null) {
 			session = jsch.getSession(username, hostName, port);
-			
-			if(this.password != null) {
-				java.util.Properties config = new java.util.Properties();
-				config.put("StrictHostKeyChecking", "no");
+
+			Properties properties = new Properties();
+			properties.setProperty("StrictHostKeyChecking", "no");
+			if (this.password != null) {
 				session.setPassword(password);
-				session.setConfig(config);
 			}
-			
+			session.setConfig(properties);
+
 			UserInfo ui = new P_UserInfo();
 
 			session.setUserInfo(ui);

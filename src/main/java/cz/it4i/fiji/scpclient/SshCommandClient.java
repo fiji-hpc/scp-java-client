@@ -17,15 +17,13 @@ import org.slf4j.LoggerFactory;
 
 public class SshCommandClient extends AbstractBaseSshClient {
 
-	private final static Logger log = LoggerFactory.getLogger(
+	private static final Logger log = LoggerFactory.getLogger(
 		SshCommandClient.class);
 
-	public SshCommandClient(String hostName, String username, 
-			String password) 
-	{
+	public SshCommandClient(String hostName, String username, String password) {
 		super(hostName, username, password);
 	}
-	
+
 	public SshCommandClient(String hostName, String username,
 		byte[] privateKeyFile) throws JSchException
 	{
@@ -88,7 +86,7 @@ public class SshCommandClient extends AbstractBaseSshClient {
 				log.debug("Done, but exit status not set!");
 			}
 			else if (exitStatus > 0) {
-				log.debug("Done, but with error! ");
+				log.debug("Done, but with error! {}", errors);
 				throw new SshExecuteCommandException(exitStatus, result, errors);
 			}
 			else {
