@@ -23,7 +23,7 @@ public class AbstractBaseSshClient implements Closeable {
 
 	protected static final long TIMEOUT_BETWEEN_CONNECTION_ATTEMPTS = 500;
 
-	private final static Logger log = LoggerFactory.getLogger(
+	private static final Logger log = LoggerFactory.getLogger(
 		AbstractBaseSshClient.class);
 
 	private String hostName;
@@ -77,12 +77,12 @@ public class AbstractBaseSshClient implements Closeable {
 	@Override
 	public void close() {
 		if (session != null && session.isConnected()) {
-			// log.info("disconnect");
 			try (DoActionEventualy actionEventualy = new DoActionEventualy(
 				TIMEOUT_BETWEEN_CONNECTION_ATTEMPTS, this::interruptSessionThread))
 			{
 				session.disconnect();
 			}
+			log.info("SSH Disconnected");
 		}
 		session = null;
 	}
@@ -102,11 +102,13 @@ public class AbstractBaseSshClient implements Closeable {
 
 			session.setUserInfo(ui);
 		}
+
 		int connectRetry = 0;
 		long timoutBetweenRetry = TIMEOUT_BETWEEN_CONNECTION_ATTEMPTS;
 		while (!session.isConnected()) {
 			try {
 				session.connect();
+				log.info("SSH Connected");
 			}
 			catch (JSchException e) {
 				if (e.getMessage().contains("Auth fail") || e.getMessage().contains(
