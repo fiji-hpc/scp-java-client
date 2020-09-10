@@ -9,6 +9,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -64,20 +65,34 @@ public class SshCommandClient extends AbstractBaseSshClient {
 
 	public List<String> executeCommand(String command) {
 		List<String> result = new LinkedList<>();
+		List<String> errors = new LinkedList<>();
 		try (SshExecutionSession session = openSshExecutionSession(command)) {
-
-			BufferedReader reader = new BufferedReader(new InputStreamReader(session
-				.getStdout()));
-			BufferedReader errReader = new BufferedReader(new InputStreamReader(
-				session.getStderr()));
 			String line;
 
-			while ((line = reader.readLine()) != null) {
-				result.add(line);
+			try (InputStream stdout = session.getStdout();
+					InputStreamReader inputStreamReader = new InputStreamReader(stdout);
+					BufferedReader reader = new BufferedReader(inputStreamReader);
+					InputStream stderr = session.getStderr();
+					InputStreamReader errorStreamReader = new InputStreamReader(stderr);
+					BufferedReader errorReader = new BufferedReader(errorStreamReader);)
+			{
+				log.debug("Before reading: {} of command: {} ", new Date(),
+					command);
+				// Get the command's output:
+				while ((line = reader.readLine()) != null) {
+					result.add(line);
+				}
+				log.debug("After reading: {} of command: {} ", new Date(), command);
+
+				// Get the errors if the command fails:
+				log.debug("Before stderr: {} of command: {} ", new Date(), command);
+				while ((line = errorReader.readLine()) != null) {
+					errors.add(line);
+				}
+				log.debug("After stderr: {} of command: {} ", new Date(), command);
 			}
-			List<String> errors = new LinkedList<>();
-			while ((line = errReader.readLine()) != null) {
-				errors.add(line);
+			catch (Exception exc) {
+				exc.printStackTrace();
 			}
 
 			int exitStatus = session.getExitStatus();
@@ -90,7 +105,7 @@ public class SshCommandClient extends AbstractBaseSshClient {
 				throw new SshExecuteCommandException(exitStatus, result, errors);
 			}
 			else {
-				log.debug("Done!");
+				log.debug("Done! " + new Date());
 			}
 		}
 		catch (Exception e) {
