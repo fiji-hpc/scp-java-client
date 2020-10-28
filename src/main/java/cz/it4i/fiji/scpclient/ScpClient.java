@@ -79,7 +79,7 @@ public class ScpClient extends AbstractBaseSshClient {
 	public void download(String lfile, Path rfile, TransferFileProgress progress)
 		throws JSchException, IOException
 	{
-		if (!Files.exists(rfile.getParent())) {
+		if (!rfile.getParent().toFile().exists()) {
 			Files.createDirectories(rfile.getParent());
 		}
 		try (OutputStream os = Files.newOutputStream(rfile)) {
@@ -92,10 +92,7 @@ public class ScpClient extends AbstractBaseSshClient {
 	{
 		AckowledgementChecker ack = new AckowledgementChecker();
 		// exec 'scp -f rfile' remotely
-
-		lfile = sanityFileName(lfile);
-
-		String command = "scp -f " + lfile;
+		String command = "scp -f " + ignoreSpaces(lfile);
 		Channel channel = getConnectedSession().openChannel("exec");
 
 		try {
@@ -222,23 +219,26 @@ public class ScpClient extends AbstractBaseSshClient {
 					try {
 						Thread.sleep(TIMEOUT_BETWEEN_CONNECTION_ATTEMPTS);
 					}
-					catch (InterruptedException exc) {}
+					catch (InterruptedException exc) {
+						// Timeout
+					}
 				}
-				mkdir(e.getFile());
+				String missingDirectory = e.getFile();
+				mkdir(missingDirectory);
 				noSuchFileExceptionThrown++;
-				continue;
 			}
 		}
 		while (true);
 	}
 
+	private String ignoreSpaces(String fileName) {
+		return " '" + fileName + "' ";
+	}
+
 	public long size(String lfile) throws JSchException, IOException {
 		AckowledgementChecker ack = new AckowledgementChecker();
 		// exec 'scp -f rfile' remotely
-
-		lfile = sanityFileName(lfile);
-
-		String command = "scp -f " + lfile;
+		String command = "scp -f " + ignoreSpaces(lfile);
 		Channel channel = getConnectedSession().openChannel("exec");
 
 		try {
@@ -277,10 +277,8 @@ public class ScpClient extends AbstractBaseSshClient {
 						filesize = filesize * 10L + buf[0] - '0';
 					}
 					return filesize;
-
 				}
 			}
-
 		}
 		finally {
 			channel.disconnect();
@@ -293,7 +291,6 @@ public class ScpClient extends AbstractBaseSshClient {
 
 		// exec 'scp -f rfile' remotely
 		Channel channel = getConnectedSession().openChannel("sftp");
-		lfile = sanityFileName(lfile);
 		try {
 			channel.connect();
 			return ((List<LsEntry>) ((ChannelSftp) channel).ls(lfile)).stream().map(
@@ -321,9 +318,9 @@ public class ScpClient extends AbstractBaseSshClient {
 		boolean ptimestamp = false;
 		// exec 'scp -t rfile' remotely
 
-		fileName = sanityFileName(fileName);
+		String command = "scp " + (ptimestamp ? "-p" : "") + " -t " + ignoreSpaces(
+			fileName);
 
-		String command = "scp " + (ptimestamp ? "-p" : "") + " -t " + fileName;
 		Channel channel = getConnectedSession().openChannel("exec");
 		((ChannelExec) channel).setCommand(command);
 		// get I/O streams for remote scp
@@ -390,24 +387,19 @@ public class ScpClient extends AbstractBaseSshClient {
 		}
 	}
 
-	private String sanityFileName(String fileName) {
-		fileName = fileName.replace("\"", "\\\\\\\"");
-		fileName = fileName.replace("'", "\\\\\\'");
-		fileName = "'" + fileName + "'";
-		return fileName;
-	}
-
-	private int mkdir(String file) throws JSchException {
-		ChannelExec channel = (ChannelExec) getConnectedSession().openChannel(
-			"exec");
-		file = sanityFileName(file);
-		channel.setCommand("mkdir -p '" + file + "'");
+	private int mkdir(String file) {
 		try {
+			ChannelExec channel = (ChannelExec) getConnectedSession().openChannel(
+				"exec");
+			String command = "mkdir -p "+ ignoreSpaces(file);
+			channel.setCommand(command);
 			channel.connect();
+			channel.disconnect();
 			return channel.getExitStatus();
 		}
-		finally {
-			channel.disconnect();
+		catch (Exception e) {
+			log.debug("Failed to create directory!");
+			return -1;
 		}
 	}
 
