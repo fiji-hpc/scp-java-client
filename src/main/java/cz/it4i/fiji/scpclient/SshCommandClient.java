@@ -76,8 +76,7 @@ public class SshCommandClient extends AbstractBaseSshClient {
 					InputStreamReader errorStreamReader = new InputStreamReader(stderr);
 					BufferedReader errorReader = new BufferedReader(errorStreamReader);)
 			{
-				log.debug("Before reading: {} of command: {} ", new Date(),
-					command);
+				log.debug("Before reading: {} of command: {} ", new Date(), command);
 				// Get the command's output:
 				while ((line = reader.readLine()) != null) {
 					result.add(line);
@@ -105,7 +104,7 @@ public class SshCommandClient extends AbstractBaseSshClient {
 				throw new SshExecuteCommandException(exitStatus, result, errors);
 			}
 			else {
-				log.debug("Done! " + new Date());
+				log.debug("Done! {} ", new Date());
 			}
 		}
 		catch (Exception e) {
@@ -150,7 +149,9 @@ public class SshCommandClient extends AbstractBaseSshClient {
 
 		@Override
 		public void close() {
-			channel.disconnect();
+			if (channel.isConnected()) {
+				channel.disconnect();
+			}
 		}
 
 	}

@@ -23,6 +23,8 @@ public class AbstractBaseSshClient implements Closeable {
 
 	protected static final long TIMEOUT_BETWEEN_CONNECTION_ATTEMPTS = 500;
 
+	private static final int KEEP_ALIVE_MESSAGE_INTEVAL = 5000;
+
 	private static final Logger log = LoggerFactory.getLogger(
 		AbstractBaseSshClient.class);
 
@@ -101,6 +103,9 @@ public class AbstractBaseSshClient implements Closeable {
 			UserInfo ui = new P_UserInfo();
 
 			session.setUserInfo(ui);
+
+			// Prevent timeout due to user inactivity by regularly sending a message:
+			session.setServerAliveInterval(KEEP_ALIVE_MESSAGE_INTEVAL);
 		}
 
 		int connectRetry = 0;
