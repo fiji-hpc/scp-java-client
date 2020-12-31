@@ -23,7 +23,7 @@ public class AbstractBaseSshClient implements Closeable {
 
 	protected static final long TIMEOUT_BETWEEN_CONNECTION_ATTEMPTS = 500;
 
-	private static final int KEEP_ALIVE_MESSAGE_INTEVAL = 5000;
+	private static final int KEEP_ALIVE_MESSAGE_INTERVAL = 5000;
 
 	private static final Logger log = LoggerFactory.getLogger(
 		AbstractBaseSshClient.class);
@@ -78,7 +78,7 @@ public class AbstractBaseSshClient implements Closeable {
 
 	@Override
 	public void close() {
-		if (session != null && session.isConnected()) {
+		if (this.session != null && this.session.isConnected()) {
 			try (DoActionEventualy actionEventualy = new DoActionEventualy(
 				TIMEOUT_BETWEEN_CONNECTION_ATTEMPTS, this::interruptSessionThread))
 			{
@@ -89,41 +89,46 @@ public class AbstractBaseSshClient implements Closeable {
 		session = null;
 	}
 
-	protected Session getConnectedSession() throws JSchException {
-		if (session == null) {
-			session = jsch.getSession(username, hostName, port);
+	private Session createSession() throws JSchException {
+		Session theSession;
 
-			Properties properties = new Properties();
-			properties.setProperty("StrictHostKeyChecking", "no");
-			if (this.password != null) {
-				session.setPassword(password);
-			}
-			session.setConfig(properties);
+		theSession = jsch.getSession(username, hostName, port);
 
-			UserInfo ui = new P_UserInfo();
-
-			session.setUserInfo(ui);
-
-			// Prevent timeout due to user inactivity by regularly sending a message:
-			session.setServerAliveInterval(KEEP_ALIVE_MESSAGE_INTEVAL);
+		Properties properties = new Properties();
+		properties.setProperty("StrictHostKeyChecking", "no");
+		if (this.password != null) {
+			theSession.setPassword(password);
 		}
+		theSession.setConfig(properties);
 
-		int connectRetry = 0;
-		long timoutBetweenRetry = TIMEOUT_BETWEEN_CONNECTION_ATTEMPTS;
-		while (!session.isConnected()) {
+		UserInfo ui = new P_UserInfo();
+
+		theSession.setUserInfo(ui);
+
+		// Prevent timeout due to user inactivity by regularly sending a message:
+		theSession.setServerAliveInterval(KEEP_ALIVE_MESSAGE_INTERVAL);
+
+		return theSession;
+	}
+
+	private Session connectSession(Session theSession) throws JSchException {
+		int connectionAttempts = 0;
+		long timoutBetweenConnectionAttempts = TIMEOUT_BETWEEN_CONNECTION_ATTEMPTS;
+		while (!theSession.isConnected()) {
 			try {
-				session.connect();
+				theSession.connect();
 				log.info("SSH Connected");
 			}
 			catch (JSchException e) {
-				if (e.getMessage().contains("Auth fail") || e.getMessage().contains(
+				String message = e.getMessage();
+				if (message.contains("Auth fail") || message.contains(
 					"Packet corrupt"))
 				{
-					if (connectRetry < MAX_NUMBER_OF_CONNECTION_ATTEMPTS) {
-						connectRetry++;
+					if (connectionAttempts < MAX_NUMBER_OF_CONNECTION_ATTEMPTS) {
+						connectionAttempts++;
 						try {
-							Thread.sleep(timoutBetweenRetry);
-							timoutBetweenRetry *= 2;
+							Thread.sleep(timoutBetweenConnectionAttempts);
+							timoutBetweenConnectionAttempts *= 2;
 						}
 						catch (InterruptedException exc) {
 							log.info("Interruption detected");
@@ -136,12 +141,22 @@ public class AbstractBaseSshClient implements Closeable {
 				throw e;
 			}
 		}
-		return session;
+
+		return theSession;
+	}
+
+	protected Session getConnectedSession() throws JSchException {
+		if (this.session == null) {
+			this.session = createSession();
+		}
+		this.session = connectSession(this.session);
+
+		return this.session;
 	}
 
 	private void interruptSessionThread() {
 		try {
-			Field f = session.getClass().getDeclaredField("connectThread");
+			Field f = this.session.getClass().getDeclaredField("connectThread");
 			if (!f.isAccessible()) {
 				f.setAccessible(true);
 				Thread thread = (Thread) f.get(session);
