@@ -10,6 +10,7 @@ import com.jcraft.jsch.UserInfo;
 import java.io.Closeable;
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Field;
+import java.nio.charset.StandardCharsets;
 import java.util.Properties;
 
 import org.slf4j.Logger;
@@ -53,13 +54,8 @@ public class AbstractBaseSshClient implements Closeable {
 		String pass) throws JSchException
 	{
 		Identity id = IdentityFile.newInstance(keyFile, null, jsch);
-		try {
-			if (pass != null) {
-				id.setPassphrase(pass.getBytes("UTF-8"));
-			}
-		}
-		catch (UnsupportedEncodingException e) {
-			throw new RuntimeException(e);
+		if (pass != null) {
+			id.setPassphrase(pass.getBytes(StandardCharsets.UTF_8));
 		}
 		init(hostName, userName, id);
 	}

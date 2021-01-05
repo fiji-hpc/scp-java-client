@@ -9,9 +9,9 @@ public class SshExecuteCommandException extends JSchException {
 
 	private static final long serialVersionUID = 8491385678306282231L;
 
-	private int exitStatus;
-	private List<String> stdout;
-	private List<String> stderr;
+	private final int exitStatus;
+	private final List<String> stdout;
+	private final List<String> stderr;
 
 	public SshExecuteCommandException(int exitStatus, List<String> stdout,
 		List<String> stderr)

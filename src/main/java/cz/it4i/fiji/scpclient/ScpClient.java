@@ -375,8 +375,6 @@ public class ScpClient extends AbstractBaseSshClient {
 			if (!ack.checkAck(in)) {
 				throw new JSchException(constructExceptionText(ack));
 			}
-			out.close();
-
 		}
 		catch (ClosedByInterruptException e) {
 			Thread.interrupted();
