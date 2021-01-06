@@ -63,54 +63,65 @@ public class SshCommandClient extends AbstractBaseSshClient {
 		}
 	}
 
-	public List<String> executeCommand(String command) {
+	private CommandResults getResults(SshExecutionSession session) {
 		List<String> result = new LinkedList<>();
 		List<String> errors = new LinkedList<>();
-		try (SshExecutionSession session = openSshExecutionSession(command)) {
+
+		try (InputStream stdout = session.getStdout();
+				InputStreamReader inputStreamReader = new InputStreamReader(stdout);
+				BufferedReader reader = new BufferedReader(inputStreamReader);
+				InputStream stderr = session.getStderr();
+				InputStreamReader errorStreamReader = new InputStreamReader(stderr);
+				BufferedReader errorReader = new BufferedReader(errorStreamReader);)
+		{
 			String line;
 
-			try (InputStream stdout = session.getStdout();
-					InputStreamReader inputStreamReader = new InputStreamReader(stdout);
-					BufferedReader reader = new BufferedReader(inputStreamReader);
-					InputStream stderr = session.getStderr();
-					InputStreamReader errorStreamReader = new InputStreamReader(stderr);
-					BufferedReader errorReader = new BufferedReader(errorStreamReader);)
-			{
-				log.debug("Before reading: {} of command: {} ", new Date(), command);
-				// Get the command's output:
-				while ((line = reader.readLine()) != null) {
-					result.add(line);
-				}
-				log.debug("After reading: {} of command: {} ", new Date(), command);
+			// Get the command's output:
+			while ((line = reader.readLine()) != null) {
+				result.add(line);
+			}
 
-				// Get the errors if the command fails:
-				log.debug("Before stderr: {} of command: {} ", new Date(), command);
-				while ((line = errorReader.readLine()) != null) {
-					errors.add(line);
-				}
-				log.debug("After stderr: {} of command: {} ", new Date(), command);
+			// Get the errors if the command fails:
+			while ((line = errorReader.readLine()) != null) {
+				errors.add(line);
 			}
-			catch (Exception exc) {
-				exc.printStackTrace();
-			}
+		}
+		catch (Exception exc) {
+			exc.printStackTrace();
+		}
+
+		return new CommandResults(result, errors);
+	}
+
+	public List<String> executeCommand(String command) {
+		List<String> results = new LinkedList<>();
+
+		try (SshExecutionSession session = openSshExecutionSession(command)) {
+
+			log.debug("Before execution: {} of command: {} ", new Date(), command);
+			CommandResults commandResults = getResults(session);
+
+			results = commandResults.getResults();
 
 			int exitStatus = session.getExitStatus();
 
 			if (exitStatus < 0) {
-				log.debug("Done, but exit status not set!");
+				log.debug("Done, but exit status not set! Command: {}", command);
 			}
 			else if (exitStatus > 0) {
-				log.debug("Done, but with error! {}", errors);
-				throw new SshExecuteCommandException(exitStatus, result, errors);
+				log.debug("Done, but with error! Command: {}", commandResults
+					.getErrors());
+				throw new SshExecuteCommandException(exitStatus, commandResults
+					.getResults(), commandResults.getErrors());
 			}
 			else {
-				log.debug("Done! {} ", new Date());
+				log.debug("Done: {} Command: {} ", new Date(), command);
 			}
 		}
 		catch (Exception e) {
 			throw new RuntimeException(e);
 		}
-		return result;
+		return results;
 	}
 
 	public boolean setPortForwarding(int lport, String rhost, int rport) {
