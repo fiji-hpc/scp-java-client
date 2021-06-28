@@ -232,7 +232,7 @@ public class ScpClient extends AbstractBaseSshClient {
 	}
 
 	private String ignoreSpaces(String fileName) {
-		return " '" + fileName + "' ";
+		return " '".concat(fileName.replace("~", "$HOME")).concat("' ");
 	}
 
 	public long size(String lfile) throws JSchException, IOException {
