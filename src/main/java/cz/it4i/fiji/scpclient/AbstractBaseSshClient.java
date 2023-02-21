@@ -9,7 +9,6 @@ import com.jcraft.jsch.UserInfo;
 
 import java.io.Closeable;
 import java.lang.reflect.Field;
-import java.nio.charset.StandardCharsets;
 import java.util.Properties;
 
 import org.slf4j.Logger;
@@ -40,23 +39,27 @@ public class AbstractBaseSshClient implements Closeable {
 	public AbstractBaseSshClient(String hostName, String username,
 		byte[] privateKeyFile) throws JSchException
 	{
-		init(hostName, username, new ByteIdentity(jsch, privateKeyFile));
+		this(hostName, username);
+		jsch.addIdentity(new ByteIdentity(jsch, privateKeyFile), null);
 	}
 
 	public AbstractBaseSshClient(String hostName, String username,
 		Identity privateKeyFile) throws JSchException
 	{
-		init(hostName, username, privateKeyFile);
+		this(hostName, username);
+		jsch.addIdentity(privateKeyFile, null);
 	}
 
 	public AbstractBaseSshClient(String hostName, String userName, String keyFile,
 		String pass) throws JSchException
 	{
-		Identity id = IdentityFile.newInstance(keyFile, null, jsch);
-		if (pass != null) {
-			id.setPassphrase(pass.getBytes(StandardCharsets.UTF_8));
-		}
-		init(hostName, userName, id);
+		this(hostName, userName);
+		jsch.addIdentity(keyFile, pass);
+	}
+
+	private AbstractBaseSshClient(String hostName, String userName) {
+		this.hostName = hostName;
+		this.username = userName;
 	}
 
 	public AbstractBaseSshClient(String hostName, String userName,
@@ -91,11 +94,13 @@ public class AbstractBaseSshClient implements Closeable {
 
 		Properties properties = new Properties();
 		properties.setProperty("StrictHostKeyChecking", "no");
+		properties.setProperty("trust", "yes");
+
+
 		if (this.password != null) {
 			theSession.setPassword(password);
 		}
 		theSession.setConfig(properties);
-
 		UserInfo ui = new P_UserInfo();
 
 		theSession.setUserInfo(ui);
@@ -165,13 +170,6 @@ public class AbstractBaseSshClient implements Closeable {
 		}
 	}
 
-	private void init(String initHostName, String initUsername,
-		Identity privateKeyFile) throws JSchException
-	{
-		this.hostName = initHostName;
-		this.username = initUsername;
-		jsch.addIdentity(privateKeyFile, null);
-	}
 
 	private class P_UserInfo implements UserInfo {
 

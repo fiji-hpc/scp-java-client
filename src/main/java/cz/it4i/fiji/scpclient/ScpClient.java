@@ -286,7 +286,6 @@ public class ScpClient extends AbstractBaseSshClient {
 		return -1;
 	}
 
-	@SuppressWarnings("unchecked")
 	public List<Long> sizeByLs(String lfile) throws JSchException {
 
 		// exec 'scp -f rfile' remotely
