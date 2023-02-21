@@ -97,4 +97,10 @@
 			<url>https://artifactory.cs.vsb.cz/it4i/</url>
 		</snapshotRepository>
 	</distributionManagement>
+	<repositories>
+		<repository>
+			<id>it4i</id>
+			<url>https://artifactory.cs.vsb.cz/it4i/</url>
+		</repository>
+	</repositories>
 </project>
