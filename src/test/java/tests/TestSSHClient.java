@@ -9,15 +9,12 @@ package tests;
 
 
 import java.io.IOException;
-import java.net.SocketAddress;
 import java.nio.file.Paths;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
-import java.security.PublicKey;
 import java.util.Collection;
 
 import org.apache.sshd.client.SshClient;
-import org.apache.sshd.client.keyverifier.ServerKeyVerifier;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.config.keys.loader.KeyPairResourceLoader;
 import org.apache.sshd.common.keyprovider.KeyIdentityProvider;
@@ -38,16 +35,7 @@ public class TestSSHClient {
 		}
 		client.setKeyIdentityProvider(KeyIdentityProvider.wrapKeyPairs(keys));
 		client.start();
-		client.setServerKeyVerifier(new ServerKeyVerifier() {
-
-			@Override
-			public boolean verifyServerKey(ClientSession clientSession,
-				SocketAddress remoteAddress, PublicKey serverKey)
-			{
-				// TODO Auto-generated method stub
-				return true;
-			}
-		});
+		client.setServerKeyVerifier(($1, $2, $3) -> true);
 		ClientSession session = client.connect("koz01", "barbora.it4i.cz", 22)
 			.verify().getSession();
 
